@@ -1,0 +1,16 @@
+font = "JetBrainsMono NerdFont"
+font-size = 14
+
+
+
+anchor = center
+width = 40%
+background-color = #1B1D1E7F
+outline-width = 0
+border-width = 0
+
+
+hide-cursor = true
+multi-instance = false
+terminal = alacritty
+ascii-input = false
