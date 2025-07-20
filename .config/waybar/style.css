@@ -1,5 +1,6 @@
 * {
     font-family: "JetBrainsMono NerdFont";
+    font-weight: bold;
     font-size: 14px;
     margin-top: 2px;
 }
@@ -46,6 +47,16 @@ window#waybar {
     margin-right: 5px;
     border-radius: 5px;
 }
+
+#battery.critical {
+    background-color: rgba(255,64,64,0.7);
+}
+
+#battery.charging {
+    background-color: rgba(64,255,64,0.7);
+}
+
+
 #clock {
     color: #F8F8FF;
     background-color: rgba(0,0,0,0.7);
