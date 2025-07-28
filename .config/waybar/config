@@ -2,17 +2,21 @@
     "position": "top",
     "mode": "hide",
     "start_hidden": true,
+    "passthrough": true,
     "height": 17,
 
     "modules-left": ["hyprland/workspaces"],
-    "modules-right": ["battery", "clock"],
+    "modules-right": ["hyprland/language", "battery", "clock"],
 
 
     "hyprland/workspaces": {
         "format": "{icon}",
         "disable-scroll": true,
     },
-        "clock": {
+    "hyprland/language": {
+        "format": "{shortDescription}",
+    },
+    "clock": {
         "interval": 30,
         "format": "{:%H:%M}",
         "max-length": 25

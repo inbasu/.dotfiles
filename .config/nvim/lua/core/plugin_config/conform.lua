@@ -3,7 +3,7 @@ require("conform").setup({
         lua = { "stylua" },
         python = { "isort", "ruff_format" },
         typescript = { "prettier" },
-        markdown = { "vale_ls" }
+        -- markdown = { "vale_ls" }
     },
     formatters = {
         ruff_format = {

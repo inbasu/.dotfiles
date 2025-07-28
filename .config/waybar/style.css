@@ -39,6 +39,15 @@ window#waybar {
     background-color: #F8F8FF;
 }
 
+#language {
+    color: #F8F8FF;
+    background-color: rgba(0,0,0,0.7);
+    padding: 0 5px;
+
+    margin-right: 5px;
+    border-radius: 5px;
+}
+
 #battery {
     color: #F8F8FF;
     background-color: rgba(0,0,0,0.7);
