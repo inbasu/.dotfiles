@@ -7,13 +7,16 @@ vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
 
 
 require("telescope").setup {
-  pickers = {
-    buffers = {
-      mappings = {
-        i = {
-          ["<c-d>"] = actions.delete_buffer,
+    pickers = {
+        find_files = {
+            theme = "ivy",
+        },
+        buffers = {
+            mappings = {
+                i = {
+                    ["<c-d>"] = actions.delete_buffer,
+                }
+            }
         }
-      }
     }
-  }
 }
