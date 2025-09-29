@@ -12,26 +12,26 @@ require("mason-lspconfig").setup({
 })
 
 -- C
-require("lspconfig").clangd.setup {}
+vim.lsp.config("clangd", {})
 
 -- Go
-require("lspconfig").gopls.setup {
+vim.lsp.config("gopls", {
     capabilities = require('cmp_nvim_lsp').default_capabilities()
-}
+})
 
 -- Python
-require("lspconfig").ruff.setup {
+vim.lsp.config("ruff", {
     settings = {
         args = {
             "--line-length=100",
         },
     },
-}
-require("lspconfig").pyright.setup {}
+})
+vim.lsp.config("pyright", {})
 
 -- TS
-require("lspconfig").ts_ls.setup {}
-require("lspconfig").eslint.setup {}
+vim.lsp.config("ts_ls", {})
+vim.lsp.config("eslint", {})
 
 -- Lua
-require("lspconfig").lua_ls.setup {}
+vim.lsp.config("lua_ls", {})
