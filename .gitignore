@@ -1,2 +1,4 @@
 .gitignore
-.zlogin
+
+#nvim
+nvim-pack-lock.json

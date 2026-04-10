@@ -1,3 +1,11 @@
 .git
 .gitignore
 README.md
+
+# macos
+.config/alacritty
+.config/hypr
+.config/mako
+.config/tofi
+.config/waybar
+.zlogin

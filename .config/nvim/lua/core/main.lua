@@ -21,6 +21,7 @@ vim.api.nvim_create_autocmd("VimLeave", { command = "!xmodmap -e 'clear Lock' -e
 
 
 -- color
+vim.pack.add({ "https://github.com/darkvoid-theme/darkvoid.nvim" })
 function ColorVim(color)
     color = color or "darkvoid"
     vim.cmd.colorscheme(color)
