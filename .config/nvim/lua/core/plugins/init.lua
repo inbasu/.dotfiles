@@ -1,0 +1,7 @@
+require("core.plugins.conform")
+require("core.plugins.lsp_config")
+require("core.plugins.netrw")
+require("core.plugins.nvim-cmp")
+require("core.plugins.nvim-lint")
+require("core.plugins.nvim-treesitter")
+require("core.plugins.telescope")

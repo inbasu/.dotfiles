@@ -1,0 +1,26 @@
+vim.pack.add({ "https://github.com/nvim-telescope/telescope.nvim" })
+vim.pack.add({ "https://github.com/nvim-lua/plenary.nvim" })
+
+
+local builtin = require('telescope.builtin')
+local actions = require('telescope.actions')
+
+vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, {})
+vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
+
+
+require("telescope").setup {
+    pickers = {
+        find_files = {
+            theme = "ivy",
+        },
+        buffers = {
+            mappings = {
+                i = {
+                    ["<c-d>"] = actions.delete_buffer,
+                }
+            }
+        }
+    }
+}
