@@ -11,10 +11,14 @@ vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
 
 
 require("telescope").setup {
-    pickers = {
-        find_files = {
-            theme = "ivy",
+    defaults = {
+        layout_strategy = "bottom_pane",
+        layout_config = {
+            height = 0.95,
+            prompt_position = "top",
         },
+    },
+    pickers = {
         buffers = {
             mappings = {
                 i = {
