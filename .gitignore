@@ -2,3 +2,7 @@
 
 #nvim
 nvim-pack-lock.json
+
+#opencode
+.config/opencode/node_modules
+.config/opencode/package-lock.json

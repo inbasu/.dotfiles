@@ -2,6 +2,9 @@
 .gitignore
 README.md
 
+# Opencode
+.config/opencode/node_modules
+
 # # macos
 # .config/alacritty
 # .config/hypr
