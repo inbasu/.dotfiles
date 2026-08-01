@@ -13,11 +13,6 @@ vim.opt.expandtab = true
 
 -- keymap
 vim.g.mapleader = " "
-vim.keymap.set("n", "<leader>pv", vim.cmd.Explore)
-
--- remap Caps Lock
-vim.api.nvim_create_autocmd("VimEnter", { command = "silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Escape'", })
-vim.api.nvim_create_autocmd("VimLeave", { command = "!xmodmap -e 'clear Lock' -e 'keycode 0x42 = Caps_Lock'", })
 
 
 -- color
@@ -32,20 +27,12 @@ end
 
 ColorVim()
 
--- diagnostic
-vim.diagnostic.config {
-    underline = true,
-    signs = true,
-    severity_sort = true,
-    update_in_insert = false,
-    virtual_lines = {
-        only_current_line = true,
-        highlight_whole_line = false,
-    },
-    --    virtual_text = {
-    --        prefix = "",
-    --        severity = nil,
-    --        source = "if_many",
-    --        format = nil,
-    --    }
-}
+-- hide annoing shit
+local isLspHintsEnable = true
+vim.api.nvim_create_user_command("Hints", function()
+    isLspHintsEnable = not isLspHintsEnable
+    vim.diagnostic.config({
+        virtual_text = isLspHintsEnable,
+        underline = isLspHintsEnable
+    })
+end, {})
