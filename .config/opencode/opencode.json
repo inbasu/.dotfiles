@@ -14,5 +14,16 @@
       }
     }
   },
-  "model": "gemma4:e2b"
+  "model": "gemma4:e2b",
+  "mcp": {
+    "wiki": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@bitbonsai/mcpvault@latest",
+        "/home/a1ice/.wiki"
+      ]
+    }
+  }
 }

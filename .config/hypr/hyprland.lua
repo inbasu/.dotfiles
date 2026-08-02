@@ -256,14 +256,15 @@ hl.device({
 ---- KEYBINDINGS ----
 ---------------------
 -- waybar
-hl.bind("ALT_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"))
-hl.bind("ALT + ALT_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"), { release = true })
 
 local mainMod = "ALT" -- Sets "Windows" key as main modifier
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 local closeWindowBind = hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+
+hl.bind("ALT_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"))
+hl.bind(mainMod .. " + ALT_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"), { release = true })
 
 -- closeWindowBind:set_enabled(false)
 hl.bind(mainMod .. " + M",
