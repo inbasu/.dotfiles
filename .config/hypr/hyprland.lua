@@ -22,7 +22,7 @@
 
 -- See https://wiki.hypr.land/Configuring/Basics/Monitors/
 hl.monitor({
-    output   = "",
+    output   = "eDP-1",
     mode     = "preferred",
     position = "auto",
     scale    = "auto",
@@ -36,7 +36,6 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "ghostty"
 local fileManager = "dolphin"
-local menu        = "hyprlauncher"
 
 
 -------------------
@@ -51,6 +50,7 @@ local menu        = "hyprlauncher"
 hl.on("hyprland.start", function()
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("waybar")
+    hl.exec_cmd("/home/a1ice/.config/hypr/scripts/battary-control.sh")
 end)
 
 
@@ -91,7 +91,7 @@ hl.env("HYPRCURSOR_SIZE", "24")
 hl.config({
     general = {
         gaps_in          = 2,
-        gaps_out         = 2,
+        gaps_out         = 1,
 
         border_size      = 1,
 
@@ -100,8 +100,7 @@ hl.config({
             inactive_border = "rgba(595959aa)",
         },
 
-        -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
-        resize_on_border = false,
+        resize_on_border = true,
 
         -- Please see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
         allow_tearing    = false,
@@ -110,31 +109,19 @@ hl.config({
     },
 
     decoration = {
-        rounding         = 5,
-        rounding_power   = 2,
+        rounding         = 16,
+        rounding_power   = 13,
 
         -- Change transparency of focused and unfocused windows
         active_opacity   = 1.0,
-        inactive_opacity = 1.0,
+        inactive_opacity = 0.82,
 
-        shadow           = {
-            enabled      = false,
-            range        = 4,
-            render_power = 3,
-            color        = 0xee1a1a1a,
-        },
+        shadow           = { enabled = false },
 
-        blur             = {
-            enabled  = false,
-            size     = 3,
-            passes   = 1,
-            vibrancy = 0.1696,
-        },
+        blur             = { enabled = false },
     },
 
-    animations = {
-        enabled = true,
-    },
+    animations = { enabled = true },
 })
 
 -- Default curves and animations, see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
@@ -222,10 +209,10 @@ hl.config({
 
 hl.config({
     input = {
-        kb_layout    = "us",
+        kb_layout    = "us,ru",
         kb_variant   = "",
         kb_model     = "",
-        kb_options   = "",
+        kb_options   = "grp:lalt_lshift_toggle",
         kb_rules     = "",
 
         follow_mouse = 1,
@@ -263,15 +250,14 @@ local mainMod = "ALT" -- Sets "Windows" key as main modifier
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 local closeWindowBind = hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 
-hl.bind("ALT_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"))
-hl.bind(mainMod .. " + ALT_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"), { release = true })
+hl.bind("SUPER_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"))
 
 -- closeWindowBind:set_enabled(false)
 hl.bind(mainMod .. " + M",
     hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + T", hl.dsp.layout("togglesplit")) -- dwindle only
 
