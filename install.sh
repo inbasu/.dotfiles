@@ -22,7 +22,7 @@ if command -v pacman >/dev/null; then
     #Extracted from the old install.sh; + stow/jq/ufw/iwd — needed for scripts
     packages=(
         hyprland hyprpaper mako waybar
-        ghostty kitty neovim
+        kitty neovim
         stow jq ufw iwd
     )
     echo ">> pacman: недостающие из: ${packages[*]}"

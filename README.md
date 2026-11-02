@@ -1,5 +1,5 @@
 ### My dotfiles:
-- ghostty;
+- kitty;
 - hyprland + hyprpaper;
 - mako;
 - neovim;
