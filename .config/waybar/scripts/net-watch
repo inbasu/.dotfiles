@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Следит за изменениями link/route/address и просит waybar перечитать custom/net.
+# Заменяет опрос по таймеру: сигнал уходит только когда сеть реально изменилась.
+# Без фильтра по имени интерфейса: net-status сам определяет активный
+# интерфейс (wifi/eth), так что любое сетевое событие — повод обновиться.
+
+SIGNAL=9
+
+exec ip monitor link route address |
+    while IFS= read -r _; do
+        pkill -RTMIN+"$SIGNAL" -x waybar 2>/dev/null || true
+    done

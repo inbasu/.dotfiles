@@ -6,3 +6,14 @@ nvim-pack-lock.json
 #opencode
 .config/opencode/node_modules
 .config/opencode/package-lock.json
+
+# VPN-профили (не пушить)
+.config/Happ.conf
+.config/Happ/
+
+# машинные данные
+.config/pulse/
+.config/go/
+
+# профиль Helium (браузер: куки/кэш — не конфиг)
+.config/net.imput.helium/

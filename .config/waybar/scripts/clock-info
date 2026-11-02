@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Clock for waybar: time in the panel, date and uptime in the tooltip.
+# LC_ALL=C pins English output regardless of the system locale.
+
+IFS='|' read -r time_str date_str <<<"$(LC_ALL=C date '+%H:%M|%a %d %B %Y')"
+
+read -r up _ <<<"$(cat /proc/uptime)"
+secs=${up%.*}
+up_d=$((secs / 86400))
+up_h=$(((secs % 86400) / 3600))
+up_m=$(((secs % 3600) / 60))
+uptime="Uptime: ${up_d}d ${up_h}h ${up_m}m"
+
+esc() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+
+printf '{"text":"%s","tooltip":"%s"}\n' \
+  "$(esc "$time_str")" \
+  "$(esc "$date_str")\\n<span size='small'>$(esc "$uptime")</span>"

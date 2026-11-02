@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# battery-refresh — переключает режим eDP-1 (120 Гц от сети / 60 Гц от батареи).
+#
+# Запускается:
+#   * udev-правилом 99-battery-refresh.rules (root) на каждое change-событие BAT0
+#   * один раз при входе в Hyprland (от пользователя) — чтобы выставить режим сразу
+#
+# Ничего не делает, если нужный режим уже установлен (состояние в /run).
+
+set -uo pipefail
+
+MONITOR="eDP-1"
+MODE_AC="3120x2080@120"
+MODE_BAT="3120x2080@60"
+BAT_STATUS="/sys/class/power_supply/BAT0/status"
+TARGET_USER="a1ice"
+TARGET_UID=1000
+HYPRCTL="/usr/bin/hyprctl"
+
+status=$(cat "$BAT_STATUS" 2>/dev/null) || exit 0
+case $status in
+    Discharging | 'Not charging') mode=$MODE_BAT ;;
+    *)                            mode=$MODE_AC ;;
+esac
+
+# state — отдельный на ветку: root пишет/читает /run, пользователь — свой runtime-каталог,
+# иначе один читает state другого и может «проскочить» включение при логине.
+if [[ $EUID -eq 0 ]]; then
+    STATE="/run/battery-refresh.mode"
+else
+    STATE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/battery-refresh.mode"
+fi
+
+# режим уже выставлен этим же скриптом — не трогаем композитор
+if [[ -r $STATE ]] && [[ "$(cat "$STATE" 2>/dev/null)" == "$mode" ]]; then
+    exit 0
+fi
+
+lua="hl.monitor({ output = \"$MONITOR\", mode = \"$mode\", position = \"auto\", scale = \"auto\" })"
+
+if [[ $EUID -eq 0 ]]; then
+    runtime="/run/user/$TARGET_UID"
+    [[ -d $runtime ]] || exit 0
+    sig=$(find "$runtime/hypr" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | head -n1)
+    [[ -n $sig ]] || exit 0
+    runuser -u "$TARGET_USER" -- env \
+        XDG_RUNTIME_DIR="$runtime" \
+        HYPRLAND_INSTANCE_SIGNATURE="$sig" \
+        "$HYPRCTL" eval "$lua" >/dev/null 2>&1 || exit 0
+    printf '%s\n' "$mode" >"$STATE" 2>/dev/null || true
+else
+    "$HYPRCTL" eval "$lua" >/dev/null 2>&1 || exit 0
+    printf '%s\n' "$mode" >"$STATE" 2>/dev/null || true
+fi

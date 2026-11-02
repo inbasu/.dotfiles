@@ -1,0 +1,3 @@
+# Переключение частоты экрана при смене питания.
+# Ставится в /etc/udev/rules.d/, скрипт — в /usr/local/bin/ (владелец root!).
+ACTION=="change", SUBSYSTEM=="power_supply", ATTR{type}=="Battery", RUN+="/usr/local/bin/battery-refresh"

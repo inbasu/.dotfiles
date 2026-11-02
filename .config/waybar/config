@@ -1,28 +1,41 @@
 {
     "position": "top",
     "mode": "hide",
-    "start_hidden": true,
-    "passthrough": true,
-    "height": 17,
+    "start_hidden": false,
+    "passthrough": false,
+    "height": 33,
 
     "modules-left": ["hyprland/workspaces"],
-    "modules-right": ["hyprland/language", "battery", "clock"],
-
+    "modules-right": ["hyprland/language", "custom/thermal", "custom/net", "battery", "custom/clock"],
 
     "hyprland/workspaces": {
         "format": "{icon}",
-        "disable-scroll": true,
+        "disable-scroll": true
     },
     "hyprland/language": {
-        "format": "{shortDescription}",
+        "format": "{shortDescription}"
     },
-    "clock": {
+    "custom/clock": {
+        "exec": "/home/a1ice/.config/waybar/scripts/clock-info",
+        "return-type": "json",
         "interval": 30,
-        "format": "{:%H:%M}",
-        "max-length": 25
+        "tooltip": true
     },
-   
+    "custom/thermal": {
+        "exec": "$HOME/.config/waybar/scripts/thermal-manager",
+        "return-type": "json",
+        "interval": 60,
+        "format": "{text}",
+        "tooltip": true
+    },
+    "custom/net": {
+        "exec": "/home/a1ice/.config/waybar/scripts/net-status",
+        "return-type": "json",
+        "interval": 30,
+        "signal": 9,
+        "hide-empty-text": true,
+        "tooltip": true,
+        "on-click": "/usr/bin/sudo -n /usr/local/bin/sshctl toggle",
+        "on-click-right": "/usr/bin/notify-send \"SSH\" \"$(/usr/local/bin/sshctl status 2>&1)\""
+    }
 }
-
-
-

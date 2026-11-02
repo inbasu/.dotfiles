@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+CPU_HIGH=85
+DISK_HIGH=55
+ACPI_HIGH=65
+CPU_MED=60
+DISK_MED=45
+ACPI_MED=55
+NOTIFY_THROTTLE=600
+STATE_FILE="/tmp/waybar-thermal-state"
+APP_NAME="Thermal Monitor"
+
+cpu_temp=""; disk_temp=""; acpi_temp=""; dev=""
+
+if command -v sensors >/dev/null 2>&1; then
+  cpu_temp="$(sensors 2>/dev/null | awk '/Package id [0-9]+/ {gsub(/[^0-9.]/,"",$4); if($4+0>m+0)m=$4} /Tctl:/ {gsub(/[^0-9.]/,"",$2); if($2+0>m+0)m=$2} /Core 0:/ {gsub(/[^0-9.]/,"",$3); if($3+0>m+0)m=$3} END{if(m!="")printf "%d",m}')"
+fi
+if [[ -z "$cpu_temp" || "$cpu_temp" == "0" ]]; then
+  for zone in /sys/class/thermal/thermal_zone*; do
+    [[ -r "$zone/temp" && -r "$zone/type" ]] || continue
+    type="$(cat "$zone/type")"; [[ "$type" =~ (x86_pkg_temp|cpu|coretemp|pch|soc) ]] || continue
+    t="$(cat "$zone/temp")"; (( t > 100000 )) || continue; cpu_temp="$((t/1000))"; break
+  done
+fi
+
+for f in /sys/class/hwmon/hwmon*/name; do
+  [[ "$(cat "$f" 2>/dev/null)" == "nvme" ]] && {
+    base=$(dirname "$f")
+    if [[ -r "$base/temp1_input" ]]; then
+      t=$(cat "$base/temp1_input"); disk_temp="$((t/1000))"
+    fi
+    break
+  }
+done
+
+if command -v acpi >/dev/null 2>&1; then
+  acpi_temp="$(acpi -t 2>/dev/null | awk '{gsub(/,/,""); for(i=1;i<=NF;i++) if($i ~ /^[0-9]+$/ && $(i+1)=="degrees"){print $i; exit}}')"
+fi
+if [[ -z "$acpi_temp" ]]; then
+  for f in /sys/class/hwmon/hwmon*/name; do
+    [[ "$(cat "$f" 2>/dev/null)" == "acpitz" ]] && {
+      base=$(dirname "$f")
+      if [[ -r "$base/temp1_input" ]]; then
+        t=$(cat "$base/temp1_input"); acpi_temp="$((t/1000))"
+      fi
+      break
+    }
+  done
+fi
+
+severity="normal"; tooltip_lines=()
+if [[ -n "$cpu_temp" && "$cpu_temp" =~ ^[0-9]+$ ]]; then
+  if (( cpu_temp >= CPU_HIGH )); then severity="critical"; tooltip_lines+=("CPU        ${cpu_temp}°C");
+  elif (( cpu_temp >= CPU_MED )); then [[ "$severity" == "normal" ]] && severity="warning"; tooltip_lines+=("CPU        ${cpu_temp}°C");
+  else tooltip_lines+=("CPU        ${cpu_temp}°C"); fi
+fi
+if [[ -n "$disk_temp" && "$disk_temp" =~ ^[0-9]+$ ]]; then
+  if (( disk_temp >= DISK_HIGH )); then severity="critical"; tooltip_lines+=("Disk       ${disk_temp}°C");
+  elif (( disk_temp >= DISK_MED )); then [[ "$severity" == "normal" ]] && severity="warning"; tooltip_lines+=("Disk       ${disk_temp}°C");
+  else tooltip_lines+=("Disk       ${disk_temp}°C"); fi
+fi
+if [[ -n "$acpi_temp" && "$acpi_temp" =~ ^[0-9]+$ ]]; then
+  if (( acpi_temp >= ACPI_HIGH )); then severity="critical"; tooltip_lines+=("ACPI       ${acpi_temp}°C");
+  elif (( acpi_temp >= ACPI_MED )); then [[ "$severity" == "normal" ]] && severity="warning"; tooltip_lines+=("ACPI       ${acpi_temp}°C");
+  else tooltip_lines+=("ACPI       ${acpi_temp}°C"); fi
+fi
+
+tooltip=""
+for line in "${tooltip_lines[@]}"; do
+  line_esc="${line//\\/\\\\}"; line_esc="${line_esc//\"/\\\"}"; tooltip="${tooltip}${line_esc}\\n"
+done
+tooltip="${tooltip%\\n}"
+
+if [[ "$severity" == "critical" ]]; then
+  should_notify=1; now=$(date +%s)
+  if [[ -f "$STATE_FILE" ]]; then last=$(cat "$STATE_FILE"); [[ "$last" =~ ^[0-9]+$ ]] && (( now - last < NOTIFY_THROTTLE )) && should_notify=0; fi
+  (( should_notify == 1 )) && notify-send -u critical -a "$APP_NAME" "Temperature too high" "$(printf '%s | ' "${tooltip_lines[@]}" | sed 's/ | $//')" && echo "$now" > "$STATE_FILE"
+  printf '{"text":"","tooltip":"%s","class":"critical"}\n' "$tooltip"
+elif [[ "$severity" == "warning" ]]; then
+  rm -f "$STATE_FILE" 2>/dev/null
+  printf '{"text":"","tooltip":"%s","class":"warning"}\n' "$tooltip"
+else
+  rm -f "$STATE_FILE" 2>/dev/null
+  printf '{"text":"","tooltip":"%s","class":"normal"}\n' "$tooltip"
+fi

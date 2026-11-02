@@ -1,0 +1,15 @@
+[Unit]
+Description=Refresh waybar network module on link/route changes
+PartOf=default.target
+# ip monitor может падать/перезапускаться — не блокировать юнит после 5 падений
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/home/a1ice/.config/waybar/scripts/net-watch
+Restart=always
+RestartSec=2
+StandardOutput=null
+
+[Install]
+WantedBy=default.target

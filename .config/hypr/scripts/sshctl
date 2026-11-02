@@ -1,0 +1,224 @@
+#!/usr/bin/env bash
+# sshctl — SSH по требованию: открыть/закрыть порт.
+#
+#   sshctl on [порт]    поднять sshd на случайном (40000-60000) или заданном порту
+#   sshctl off          остановить sshd и закрыть порт в ufw
+#   sshctl toggle       переключить
+#   sshctl status       состояние для человека
+#   sshctl status --json  состояние для waybar (custom/net)
+#   sshctl cleanup      снять «зависшие» правила ufw (вызывается на старте системы)
+#
+# Порт пишется в /run/ssh-ondemand.state (0644), поэтому status читается
+# без sudo и его можно показывать в тултипе waybar: "ssh port - 55055".
+#
+# Вход по паролю, максимум 3 попытки (MaxAuthTries=3); root запрещён.
+# Ключи не требуются — authorized_keys может отсутствовать.
+
+set -uo pipefail
+
+UNIT="sshd-ondemand"
+STATE="/run/ssh-ondemand.state"
+PORT_MIN=40000
+PORT_MAX=60000
+SSHD="/usr/bin/sshd"
+UFW_TAG="sshctl"
+WAYBAR_SIGNAL=9
+
+die() { printf 'sshctl: %s\n' "$*" >&2; exit 1; }
+
+active() { systemctl is-active --quiet "$UNIT"; }
+
+asroot() {
+    if [[ $EUID -eq 0 ]]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
+need_root() {
+    [[ $EUID -eq 0 ]] || sudo -v || die "нужен sudo"
+}
+
+# Сериализация on/off/toggle/cleanup: двойной клик не должен раздвоить состояние.
+# Лок живёт в runtime-каталоге пользователя (есть при любом способе запуска).
+take_lock() {
+    local dir lock
+    dir="/run/user/$(id -u "${SUDO_USER:-a1ice}")"
+    [[ -d $dir ]] || return 0
+    lock="$dir/sshctl.lock"
+    exec 9>"$lock" 2>/dev/null || return 0
+    # чтобы и пользовательский, и sudo-paths держали ОДИН и тот же лок
+    [[ $EUID -eq 0 ]] && /usr/bin/chmod 666 "$lock" 2>/dev/null
+    flock 9
+}
+
+current_port() {
+    [[ -r $STATE ]] || return 1
+    local p
+    IFS= read -r p <"$STATE" || return 1
+    [[ $p =~ ^[0-9]+$ ]] || return 1
+    printf '%s' "$p"
+}
+
+free_port() {
+    local p i
+    for i in {1..100}; do
+        p=$(( RANDOM % (PORT_MAX - PORT_MIN + 1) + PORT_MIN ))
+        ss -Hltn "sport = :$p" 2>/dev/null | grep -q . && continue
+        printf '%s' "$p"
+        return 0
+    done
+    return 1
+}
+
+signal_waybar() {
+    pkill -RTMIN+"$WAYBAR_SIGNAL" -x waybar 2>/dev/null || true
+}
+
+# Уведомление в сессию пользователя (само по себе — напрямую, при root — через runuser)
+notify() {
+    local title=$1 body=$2
+    if [[ $EUID -eq 0 ]]; then
+        local uid
+        uid=$(id -u "${SUDO_USER:-a1ice}")
+        [[ -d /run/user/$uid ]] || return 0
+        runuser -u "${SUDO_USER:-a1ice}" -- \
+            env XDG_RUNTIME_DIR="/run/user/$uid" WAYLAND_DISPLAY=wayland-1 \
+            /usr/bin/notify-send "$title" "$body" >/dev/null 2>&1 || true
+    else
+        /usr/bin/notify-send "$title" "$body" >/dev/null 2>&1 || true
+    fi
+}
+
+# Флаги sshd: пароль, 3 попытки, без root
+AUTH_FLAGS=(
+    -o PasswordAuthentication=yes
+    -o PermitRootLogin=no
+    -o MaxAuthTries=3
+    -o LoginGraceTime=20
+)
+
+# Удалить правило ufw: сперва точечно своё (с comment), без-fallback только как страховка
+delete_rule() {
+    local spec=$1
+    asroot ufw delete allow "$spec" comment "$UFW_TAG" >/dev/null 2>&1 ||
+        asroot ufw delete allow "$spec" >/dev/null 2>&1
+}
+
+# Удалить все правила ufw, помеченные комментарием sshctl (хвосты после ребута)
+cleanup_rules() {
+    local spec
+    asroot ufw show added 2>/dev/null |
+        grep -F "comment '$UFW_TAG'" |
+        grep -oE '[0-9]+/(tcp|udp)' |
+        sort -u |
+        while IFS= read -r spec; do
+            [[ -n $spec ]] || continue
+            if delete_rule "$spec"; then
+                printf 'ufw: убрано зависшее правило %s\n' "$spec"
+            fi
+        done
+}
+
+cmd_on() {
+    if active; then
+        local p
+        p=$(current_port || true)
+        printf 'SSH уже включён: порт %s\n' "${p:-«неизвестен, state потерян»}"
+        return 0
+    fi
+
+    local port="${1:-}"
+    if [[ -z $port ]]; then
+        port=$(free_port) || die "не нашёл свободный TCP-порт в диапазоне $PORT_MIN-$PORT_MAX"
+    fi
+    [[ $port =~ ^[0-9]+$ ]] && (( port >= PORT_MIN && port <= PORT_MAX )) ||
+        die "порт вне диапазона $PORT_MIN-$PORT_MAX: $port"
+
+    need_root
+    cleanup_rules
+
+    asroot ufw allow "${port}/tcp" comment "$UFW_TAG" >/dev/null || die "ufw: не смог открыть ${port}/tcp"
+
+    # ExecStopPost: если sshd умер сам (crcsh/kill), закрыть порт и убрать state сами.
+    # Убирает fail-open «демон умер, правило живёт».
+    local stop_hook="/bin/sh -c '/usr/bin/ufw delete allow ${port}/tcp 2>/dev/null; /usr/bin/rm -f $STATE; /usr/bin/pkill -RTMIN+${WAYBAR_SIGNAL} -x waybar 2>/dev/null || true'"
+
+    asroot systemd-run --quiet --unit="$UNIT" --collect \
+        --description="SSH on demand (port ${port})" \
+        --property="ExecStopPost=$stop_hook" \
+        "$SSHD" -D -e -p "$port" -o "PidFile=/run/${UNIT}.pid" "${AUTH_FLAGS[@]}" ||
+        {
+            delete_rule "${port}/tcp"
+            signal_waybar
+            die "не удалось запустить sshd"
+        }
+
+    printf '%s\n' "$port" | asroot tee "$STATE" >/dev/null
+    asroot chmod 644 "$STATE"
+
+    local i
+    for i in {1..10}; do
+        active && break
+        sleep 0.2
+    done
+
+    if active; then
+        signal_waybar
+        notify "SSH" "включён · порт $port"
+        printf 'SSH включён: порт %s\n' "$port"
+    else
+        asroot systemctl stop "$UNIT" >/dev/null 2>&1
+        delete_rule "${port}/tcp"
+        asroot rm -f "$STATE"
+        signal_waybar
+        die "sshd не поднялся (порт занят?)"
+    fi
+}
+
+cmd_off() {
+    local port
+    port=$(current_port || true)
+
+    need_root
+    asroot systemctl stop "$UNIT" >/dev/null 2>&1
+    [[ -n ${port:-} ]] && delete_rule "${port}/tcp"
+    asroot rm -f "$STATE"
+    # страховка от «сироты»: снять и вообще все свои зависшие правила
+    cleanup_rules
+    signal_waybar
+    notify "SSH" "выключен"
+
+    printf 'SSH выключен\n'
+}
+
+cmd_status() {
+    local port json=${1:-}
+    port=$(current_port || true)
+
+    if active; then
+        if [[ $json == --json ]]; then
+            printf '{"text":"SSH %s","tooltip":"ssh port - %s","class":"on"}\n' "${port:-?}" "${port:-?}"
+        else
+            printf 'SSH: on, порт %s\n' "${port:-«неизвестен, state потерян»}"
+        fi
+        return 0
+    fi
+
+    if [[ $json == --json ]]; then
+        printf '{"text":"","tooltip":"ssh: off","class":"off"}\n'
+    else
+        printf 'SSH: off\n'
+    fi
+    return 1
+}
+
+case "${1:-status}" in
+    on)      take_lock; cmd_on "${2:-}" ;;
+    off)     take_lock; cmd_off ;;
+    toggle)  take_lock; if active; then cmd_off; else cmd_on; fi ;;
+    status)  cmd_status "${2:-}" ;;
+    cleanup) take_lock; need_root; cleanup_rules ;;
+    *)       die "usage: sshctl {on [порт]|off|toggle|status [--json]|cleanup}" ;;
+esac

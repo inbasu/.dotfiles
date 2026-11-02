@@ -14,6 +14,14 @@ vim.opt.expandtab = true
 -- keymap
 vim.g.mapleader = " "
 
+-- lint chars
+vim.opt.listchars = { space = '·', eol = '↵' }
+local lintc = false
+vim.api.nvim_create_user_command("LintC", function()
+    lintc = not lintc
+    vim.opt.list = lintc
+end, {})
+
 
 -- color
 vim.pack.add({ "https://github.com/darkvoid-theme/darkvoid.nvim" })

@@ -26,6 +26,8 @@ hl.monitor({
     mode     = "preferred",
     position = "auto",
     scale    = "auto",
+    bitdepth = 10,
+    cm       = "hdr",
 })
 
 
@@ -34,8 +36,8 @@ hl.monitor({
 ---------------------
 
 -- Set programs that you use
-local terminal    = "ghostty"
-local fileManager = "dolphin"
+local terminal    = "kitty"
+local fileManager = "kitty -e ranger"
 
 
 -------------------
@@ -50,7 +52,8 @@ local fileManager = "dolphin"
 hl.on("hyprland.start", function()
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("waybar")
-    hl.exec_cmd("/home/a1ice/.config/hypr/scripts/battary-control.sh")
+    -- один раз выставляет режим под текущее питание; дальше рулит udev
+    hl.exec_cmd("/home/a1ice/.config/hypr/scripts/battery-refresh")
 end)
 
 
@@ -110,7 +113,7 @@ hl.config({
 
     decoration = {
         rounding         = 16,
-        rounding_power   = 13,
+        rounding_power   = 10,
 
         -- Change transparency of focused and unfocused windows
         active_opacity   = 1.0,
@@ -202,6 +205,15 @@ hl.config({
     },
 })
 
+-- Xwayland не нужен: все приложения Wayland-native (kitty, waybar, hyprpaper, mako, tofi).
+-- Понадобится X11-приложение (Steam, Java, старый софт) — верни enabled = true
+-- и перезапусти Hyprland, Xwayland поднимется вместе с ним.
+hl.config({
+    xwayland = {
+        enabled = false,
+    },
+})
+
 
 ---------------
 ---- INPUT ----
@@ -242,19 +254,22 @@ hl.device({
 ---------------------
 ---- KEYBINDINGS ----
 ---------------------
--- waybar
-
+-- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 local mainMod = "ALT" -- Sets "Windows" key as main modifier
 
--- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 local closeWindowBind = hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 
-hl.bind("SUPER_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"))
+-- Waybar: Super — показать/скрыть бар (SIGUSR1 = toggle видимости)
+-- release: срабатывает на отпускание, чтобы Super+комбинации не моргали баром
+hl.bind("SUPER_L", hl.dsp.exec_cmd("pkill -SIGUSR1 waybar"), { release = true })
+
+-- Hyprshot (Print, чтобы не конфликтовать с ALT+S — special workspace)
+hl.bind("Print", hl.dsp.exec_cmd("hyprshot -zm region --clipboard-only"))
 
 -- closeWindowBind:set_enabled(false)
 hl.bind(mainMod .. " + M",
-    hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+    hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))

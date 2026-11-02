@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# Индикатор сети для waybar.
+#   пусто      → сети нет и SSH выключен, модуль скрывается (hide-empty-text)
+#   ● зелёный  → есть адрес и маршрут наружу
+#   ● красный  → интерфейс поднят, но адреса/маршрута нет
+#   SSH <порт> → сети нет, но sshd поднят через sshctl
+#
+# Тултип — выровненный список: метка слева, значение прижато вправо, без двоеточий:
+#   WIFI      <ssid>
+#   IP        <адрес | нет сети>
+#   SSH       <порт | OFF>
+# Без ping: цвет считается по локальному состоянию (route/addr), сеть не опрашивается.
+# Обновление — по сигналу RTMIN+9: net-watch (ip monitor) и sshctl.
+
+GREEN='#a6e3a1'
+RED='#f38ba8'
+
+# sshctl пишет порт сюда (0644 — читается без sudo); переменные можно переопределить для теста
+SSH_STATE=${SSH_STATE:-/run/ssh-ondemand.state}
+SSH_UNIT=${SSH_UNIT:-sshd-ondemand}
+
+# Значение для Pango: убрать управляющие символы, обезвредить разметку.
+# В кавычки/JSON оборачивает jq целиком (валидность JSON гарантирует он).
+esc() {
+    printf '%s' "$1" |
+        tr -d '\000-\010\013\014\016-\037' |
+        sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+# Строка тултипа: метка слева (LABEL_W символов), значение прижато вправо на общую
+# ширину val_w. Паддинг считаем по ${#var} — символам, а не байтам (кириллица).
+LABEL_W=4
+val_w=0
+row() {
+    local label=$1 val=$2 pad
+    pad=$((LABEL_W - ${#label}))
+    ((pad > 0)) && label="${label}$(printf '%*s' "$pad" '')"
+    pad=$((val_w - ${#val}))
+    ((pad > 0)) && val="$(printf '%*s' "$pad" '')${val}"
+    printf '%s  %s' "$label" "$val"
+}
+
+# Вывод: json_backend печатает готовый JSON-объект (jq гарантирует валидность)
+json_backend() { jq -cn --arg text "$1" --arg tip "$2" '{text: $text, tooltip: $tip}'; }
+
+# Активный SSH-порт
+ssh_port=""
+if [[ -r $SSH_STATE ]]; then
+    p=$(<"$SSH_STATE")
+    if [[ $p =~ ^[0-9]+$ ]] && systemctl is-active --quiet "$SSH_UNIT"; then
+        ssh_port=$p
+    fi
+fi
+
+# Сети нет, но SSH открыт — показываем хотя бы его, иначе модуль будет скрыт
+show_ssh_only() {
+    [[ -n $ssh_port ]] || exit 0
+    val_w=${#ssh_port}
+    json_backend "SSH $ssh_port" "$(row SSH "$ssh_port")"
+    exit 0
+}
+
+# Интерфейс, через который пойдёт наружу трафик
+dev=$(ip -o -4 route get 1.1.1.1 2>/dev/null |
+    awk '{for (i = 1; i <= NF; i++) if ($i == "dev") print $(i + 1)}')
+
+ipaddr=""
+[[ -n $dev ]] && ipaddr=$(ip -o -4 addr show dev "$dev" scope global 2>/dev/null |
+    awk 'NR == 1 {print $4}' | cut -d/ -f1)
+
+if [[ -n $ipaddr ]]; then
+    color=$GREEN
+else
+    # маршрута нет — ищем просто поднятый интерфейс, чтобы показать красную точку
+    dev=$(ip -o link show up 2>/dev/null |
+        awk -F': ' '$2 != "lo" && $2 != "" {print $2; exit}')
+    [[ -n $dev ]] || show_ssh_only
+    ipaddr="нет сети"
+    color=$RED
+fi
+
+# Метка: WIFI на wireless-интерфейсе, иначе ETH (ethernet/usb/tun — не врём про wifi)
+net_label=WIFI
+[[ $dev == wl* ]] || net_label=ETH
+
+# Имя сети: строка iwd «Connected network     ИМЯ» (имя может содержать пробелы).
+# Отрезаем от начала строки до группы пробелов после «Connected network»,
+# внутри имени пробелы сохраняются; хвостовые пробелы выравнивания iwd — срезаем.
+ssid=""
+if [[ $dev == wl* ]]; then
+    ssid=$(iwctl station "$dev" show 2>/dev/null |
+        sed 's/\x1b\[[0-9;]*m//g' |
+        sed -n 's/^.*Connected network[[:space:]]\{1,\}//p' |
+        sed -e 's/[[:space:]]*$//' |
+        head -n1)
+fi
+[ -n "$ssid" ] || ssid=$dev
+
+# общая ширина колонки значений — по самой длинной из них
+ssh_val=${ssh_port:-OFF}
+val_w=${#ssid}
+(( ${#ipaddr} > val_w )) && val_w=${#ipaddr}
+(( ${#ssh_val} > val_w )) && val_w=${#ssh_val}
+
+tip="$(esc "$(row "$net_label" "$ssid")")
+$(esc "$(row IP "$ipaddr")")
+$(esc "$(row SSH "$ssh_val")")"
+
+text="<span foreground='$color'>●</span>"
+
+json_backend "$text" "$tip"

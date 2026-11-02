@@ -1,7 +1,10 @@
+
+
+
 * {
-    font-family: "JetBrainsMono NerdFont";
+    font-family: "Symbols Nerd Font", "JetBrainsMono Nerd Font", "JetBrainsMono NerdFont", monospace;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
     margin-top: 2px;
 }
 
@@ -13,17 +16,19 @@ window#waybar {
 
 
 #workspaces button:first-child {
-    margin-left: 5px;
-    border-radius: 5px 0 0 5px;
+    margin-left: 8px;
+    border-radius: 10px 0 0 10px;
+    padding-left: 3px;
 }
 
 #workspaces button:last-child {
-    border-radius: 0 5px 5px 0;
+    border-radius: 0 10px 10px 0;
+    padding-right: 3px;
 }
 
 #workspaces button:only-child {
     margin-left: 5px;
-    border-radius: 5px;
+    border-radius: 10px;
 }
 
 #workspaces button {
@@ -45,7 +50,15 @@ window#waybar {
     padding: 0 5px;
 
     margin-right: 5px;
-    border-radius: 5px;
+    border-radius: 10px;
+}
+
+#custom-net {
+    color: #F8F8FF;
+    background-color: rgba(0,0,0,0.7);
+    padding: 0 8px;
+    margin-right: 5px;
+    border-radius: 10px;
 }
 
 #battery {
@@ -54,7 +67,7 @@ window#waybar {
     padding: 0 5px;
 
     margin-right: 5px;
-    border-radius: 5px;
+    border-radius: 10px;
 }
 
 #battery.critical {
@@ -66,11 +79,51 @@ window#waybar {
 }
 
 
-#clock {
+#custom-clock {
     color: #F8F8FF;
     background-color: rgba(0,0,0,0.7);
     padding: 0 5px;
 
-    margin-right: 5px;
-    border-radius: 5px;
+    margin-right: 8px;
+    border-radius: 10px;
+}
+
+#custom-thermal.normal {
+    color: #F8F8FF;
+    background-color: rgba(0,0,0,0.7);
+    padding: 0 6px;
+    margin-right: 4px;
+    border-radius: 10px;
+}
+
+#custom-thermal.warning {
+    color: #fff2b2;
+    background-color: rgba(0,0,0,0.7);
+    padding: 0 6px;
+    margin-right: 4px;
+    border-radius: 10px;
+}
+
+#custom-thermal.critical {
+    color: #ff5555;
+    background-color: rgba(0,0,0,0.7);
+    padding: 0 6px;
+    margin-right: 4px;
+    border-radius: 10px;
+}
+
+* {
+    font-family: "JetBrainsMono Nerd Font", "JetBrainsMono NerdFont", "Symbols Nerd Font", "Noto Color Emoji", monospace;
+}
+
+#custom-thermal {
+    padding: 0 6px;
+    margin-right: 4px;
+    border-radius: 10px;
+}
+
+/* В невидимом режиме (toggle по SUPER_L / SIGUSR1) бар должен реально исчезать,
+   иначе он остаётся на экране, но с пустой областью ввода — клики «не работают». */
+window#waybar.hidden {
+    opacity: 0;
 }

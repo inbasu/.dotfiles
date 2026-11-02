@@ -1,0 +1,10 @@
+[Unit]
+Description=Remove stale sshctl ufw rules
+After=ufw.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sshctl cleanup
+
+[Install]
+WantedBy=multi-user.target
