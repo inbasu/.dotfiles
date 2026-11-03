@@ -9,13 +9,13 @@
 ## Конфиги
 
 - Hyprland, hyprpaper
-- waybar
 - kitty
 - mako
-- tofi
 - nvim
-- zsh
 - opencode
+- tofi
+- waybar
+- zsh
 
 ## Установка
 
