@@ -1,19 +1,24 @@
-### My dotfiles:
-- kitty;
-- hyprland + hyprpaper;
-- mako;
-- neovim;
-- opencode;
-- waybar;
-- zsh
+# dotfiles
 
-### Usage:
-Just stow:
-```sh
-cd ~/.dotfiles & stow .
-```
-  
-Instow (install + stow)
-```sh
-cd ~/.dotfiles & ./install.sh
+Конфиги Arch Linux.
+
+## Система
+
+- Arch Linux, x86_64, ядро 7.2.14
+
+## Конфиги
+
+- Hyprland, hyprpaper
+- waybar
+- kitty
+- mako
+- tofi
+- nvim
+- zsh
+- opencode
+
+## Установка
+
+```bash
+~/.dotfiles/install.sh
 ```
