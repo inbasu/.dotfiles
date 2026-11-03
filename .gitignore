@@ -17,3 +17,6 @@ nvim-pack-lock.json
 
 # профиль Helium (браузер: куки/кэш — не конфиг)
 .config/net.imput.helium/
+
+# секрет локального сервиса opencode
+.config/opencode/service.json
