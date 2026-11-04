@@ -8,6 +8,7 @@ alias vim='nvim'
 # opencode
 export PATH=/home/a1ice/.opencode/bin:$PATH
 alias slopencode='cd ~/Documents/slop && opencode'
+alias wiki='cd ~/Documents/wiki && nvim index.md'
 
 # kittens
 alias kssh="kitten ssh"

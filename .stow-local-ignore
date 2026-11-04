@@ -2,6 +2,10 @@
 .gitignore
 README.md
 
+# служебное (не конфиги)
+install.sh
+LICENSE
+
 # Opencode
 .config/opencode/node_modules
 

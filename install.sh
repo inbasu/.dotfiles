@@ -29,17 +29,33 @@ if command -v pacman >/dev/null; then
     sudo pacman -S --needed "${packages[@]}"
 fi
 
-# --- 1) stow -----------------------------------------------------------------
-if [[ -e $HOME/.config && ! -L $HOME/.config ]]; then
-    echo "ОШИБКА: $HOME/.config — реальный каталог." >&2
-    echo "Не хочу складывать поверх; перенеси содержимое в $DOT/.config сам." >&2
+# --- 1) stow ----------------------------------------------------------------
+# Правильная раскладка: ~/.config — реальный каталог, внутри — лин-ки на
+# наши дот-файлы из репо; .zshrc/.zlogin — лин-ки на уровень вверх.
+if [[ -L $HOME/.config ]]; then
+    link=$(readlink "$HOME/.config")
+    case "$link" in
+        *"$(basename "$DOT")/.config")
+            # старая схема («.config целиком линком») — заменяем на реальный каталог
+            rm "$HOME/.config"
+            mkdir "$HOME/.config"
+            echo "stow:     старый линк ~/.config снят, каталог создан"
+            ;;
+        *)
+            echo "ОШИБКА: ~/.config — симлинк в чужое место ($link)." >&2
+            echo "Не трогаю: разберись вручную." >&2
+            exit 1
+            ;;
+    esac
+elif [[ ! -d $HOME/.config ]]; then
+    mkdir "$HOME/.config"
+fi
+
+if ! stow -d "$(dirname "$DOT")" -t "$HOME" "$(basename "$DOT")"; then
+    echo "ОШИБКА: stow не смог связать дот-файлы" >&2
     exit 1
 fi
-if ! stow -d "$DOT" -t "$HOME" .config; then
-    echo "ОШИБКА: stow не смог связать .config" >&2
-    exit 1
-fi
-echo "stow:     ok ($HOME/.config → $DOT/.config)"
+echo "stow:     ok (~/.config/<app> → $(basename "$DOT")/.config/<app>)"
 
 sudo() {
     echo ">> sudo $*"

@@ -20,3 +20,15 @@ nvim-pack-lock.json
 
 # секрет локального сервиса opencode
 .config/opencode/service.json
+
+# runtime/системные — не dotfiles
+.config/QtProject.conf
+.config/dconf/
+.config/htop/
+.config/pikaur.conf
+.config/pacman-orphans.keep
+.config/go/
+.config/pulse/
+.config/gtk-3.0/
+.config/procps/
+.config/ranger/
